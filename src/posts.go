@@ -1,6 +1,9 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -9,6 +12,89 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+// Discord webhook payload structure
+type discordWebhookPayload struct {
+	Username   string                `json:"username,omitempty"`
+	Avatar_url string                `json:"avatar_url,omitempty"`
+	Content    string                `json:"content,omitempty"`
+	Embeds     []discordWebhookEmbed `json:"embeds,omitempty"`
+}
+
+type discordWebhookEmbed struct {
+	Title       string                     `json:"title,omitempty"`
+	Description string                     `json:"description,omitempty"`
+	Color       int                        `json:"color,omitempty"`
+	URL         string                     `json:"url,omitempty"`
+	Timestamp   string                     `json:"timestamp,omitempty"`
+	Author      *discordWebhookEmbedAuthor `json:"author,omitempty"`
+	Image       *discordWebhookEmbedImage  `json:"image,omitempty"`
+}
+
+type discordWebhookEmbedAuthor struct {
+	Name string `json:"name,omitempty"`
+}
+
+type discordWebhookEmbedImage struct {
+	URL string `json:"url,omitempty"`
+}
+
+// sendDiscordWebhook sends a notification to Discord when a new post is created
+func sendDiscordWebhook(post *Post, baseURL string) {
+	webhookURL := os.Getenv("DISCORD_WEBHOOK_URL")
+	if webhookURL == "" {
+		return // webhook not configured
+	}
+
+	// Build post URL
+	postURL := fmt.Sprintf("%s/post/%d", baseURL, post.ID)
+
+	// Create embed
+	embed := discordWebhookEmbed{
+		Title:       post.Title,
+		Description: post.Description,
+		Color:       0x6c63ff, // purple color
+		URL:         postURL,
+		Timestamp:   time.UnixMilli(post.Timestamp).Format(time.RFC3339),
+		Author: &discordWebhookEmbedAuthor{
+			Name: post.Author,
+		},
+		Image: nil,
+	}
+
+	// Add thumbnail if present
+	if post.Thumbnail != "" {
+		embed.Image = &discordWebhookEmbedImage{
+			URL: baseURL + post.Thumbnail,
+		}
+	}
+
+	payload := discordWebhookPayload{
+		Username:   "Warpdrive",
+		Avatar_url: "https://avatars.githubusercontent.com/u/230058906?s=200&v=4",
+		Content:    "📝 New blog post published!",
+		Embeds:     []discordWebhookEmbed{embed},
+	}
+
+	fmt.Printf("Discord webhook: Sending payload for post #%d\n", post.ID)
+
+	// Send webhook asynchronously to avoid blocking the response
+	go func() {
+		jsonData, err := json.Marshal(payload)
+		if err != nil {
+			fmt.Printf("Discord webhook: JSON marshal error: %v\n", err)
+			return
+		}
+
+		resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(jsonData))
+		if err != nil {
+			fmt.Printf("Discord webhook: HTTP POST error: %v\n", err)
+			return
+		}
+		defer resp.Body.Close()
+		fmt.Printf("Discord webhook: Successfully sent (status %d)\n", resp.StatusCode)
+	}()
+}
 
 func createPost(c *gin.Context) {
 	var in createPostInput
@@ -57,6 +143,13 @@ func createPost(c *gin.Context) {
 		return
 	}
 	postsMu.Unlock()
+
+	// Send Discord webhook notification
+	baseURL := os.Getenv("BASE_URL")
+	if baseURL == "" {
+		baseURL = "http://localhost:8080" // fallback
+	}
+	sendDiscordWebhook(p, baseURL)
 
 	c.JSON(http.StatusCreated, p)
 }

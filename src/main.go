@@ -7,11 +7,17 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
+
+	err := godotenv.Load() // 👈 load .env file
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	if v := os.Getenv("POSTS_JSON"); v != "" {
 		postsFilePath = v

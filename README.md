@@ -73,6 +73,9 @@ curl -s -X PATCH http://localhost:$PORT/api/posts/1 \
 curl -i -X DELETE http://localhost:$PORT/api/posts/1
 ```
 
-Notes
+## src/env
 
-- Data is stored in-memory and resets on restart.
+```txt
+BASE_URL=https://blog.warpdrive.team // what url this is being hosted on
+DISCORD_WEBHOOK_URL= // used for forwarding to discord
+```
