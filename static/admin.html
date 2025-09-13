@@ -1,0 +1,1057 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Blogger Admin</title>
+    <style>
+        :root {
+            color-scheme: light dark;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 1.25rem;
+        }
+
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid #ccc3;
+            background: color-mix(in oklab, Canvas, transparent 10%);
+        }
+
+        .nav-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: .75rem 1.25rem;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            font-weight: 600;
+        }
+
+        .brand .dot {
+            width: .65rem;
+            height: .65rem;
+            border-radius: 50%;
+            background: #6c63ff;
+            display: inline-block;
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: .6rem;
+            align-items: center;
+        }
+
+        .btn {
+            appearance: none;
+            border: 1px solid #ccc7;
+            background: color-mix(in oklab, Canvas, transparent 5%);
+            padding: .45rem .7rem;
+            border-radius: .5rem;
+            cursor: pointer;
+        }
+
+        .btn.primary {
+            background: #6c63ff;
+            color: white;
+            border-color: #6c63ff;
+        }
+
+        .btn.danger {
+            background: #b00020;
+            color: white;
+            border-color: #b00020;
+        }
+
+        .btn:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+        }
+
+        h1 {
+            margin: 1rem 0 .5rem;
+            font-size: 1.6rem;
+        }
+
+        h2 {
+            margin: 1.25rem 0 .5rem;
+            font-size: 1.2rem;
+        }
+
+        .card {
+            border: 1px solid #ccc6;
+            border-radius: .75rem;
+            padding: 1rem;
+            background: color-mix(in oklab, Canvas, transparent 5%);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        @media (min-width: 900px) {
+            .grid {
+                grid-template-columns: 1.1fr .9fr;
+            }
+        }
+
+        label {
+            font-size: .9rem;
+            margin-bottom: .25rem;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: .5rem .6rem;
+            border-radius: .5rem;
+            border: 1px solid #ccc7;
+            background: color-mix(in oklab, Canvas, transparent 2%);
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th,
+        td {
+            border-bottom: 1px solid #ccc5;
+            padding: .55rem .5rem;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            font-size: .9rem;
+            text-transform: uppercase;
+            letter-spacing: .02em;
+            opacity: .8;
+        }
+
+        .muted {
+            opacity: .75;
+            font-size: .9em;
+        }
+
+        .actions {
+            display: inline-flex;
+            gap: .4rem;
+        }
+
+        .error {
+            color: #b00020;
+        }
+
+        .success {
+            color: #0a7a0a;
+        }
+
+        .mono {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        }
+
+        dialog {
+            border: 1px solid #ccc7;
+            border-radius: .75rem;
+            padding: 0;
+            max-width: 800px;
+            width: 90vw;
+        }
+
+        dialog .dlg-inner {
+            padding: 1rem;
+        }
+
+        dialog::backdrop {
+            backdrop-filter: blur(1px);
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: color-mix(in oklab, Canvas, transparent 10%);
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .overlay.show {
+            display: flex;
+        }
+
+        .auth-card {
+            border: 1px solid #ccc6;
+            border-radius: .75rem;
+            padding: 1rem;
+            width: min(520px, 92vw);
+            background: color-mix(in oklab, Canvas, transparent 5%);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .1);
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: .75rem;
+        }
+
+        .row>div {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .spacer {
+            height: .5rem;
+        }
+
+        .kbd {
+            border: 1px solid #ccc7;
+            border-bottom-width: 2px;
+            border-radius: .35rem;
+            padding: .05rem .3rem;
+            font-size: .85em;
+        }
+
+        .avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1px solid #ccc7;
+            object-fit: cover;
+            display: none;
+        }
+
+        .link {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        /* Preview + split layout */
+        .split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: .75rem;
+            align-items: stretch;
+        }
+
+        /* Make columns stack their content and stretch inner editors */
+        .split>div {
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (max-width: 900px) {
+            .split {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        #createPreview {
+            min-height: 420px;
+            padding: .6rem;
+            border: 1px dashed #ccc7;
+            border-radius: .5rem;
+            background: color-mix(in oklab, Canvas, transparent 3%);
+            flex: 1;
+            overflow: auto;
+        }
+
+        /* Thumbs grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: .6rem;
+        }
+
+        .thumb {
+            border: 2px solid transparent;
+            border-radius: .5rem;
+            overflow: hidden;
+            cursor: pointer;
+            background: color-mix(in oklab, Canvas, transparent 3%);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, .06);
+            transition: transform .12s ease, border-color .15s ease, box-shadow .15s ease;
+        }
+
+        .thumb:hover {
+            transform: translateY(-2px);
+        }
+
+        .thumb.selected {
+            border-color: #6c63ff;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, .1);
+        }
+
+        /* Create dialog enhancements */
+        #createDialog {
+            max-width: 1200px;
+            width: 96vw;
+        }
+
+        #cContent {
+            min-height: 420px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            line-height: 1.45;
+            padding: .6rem .7rem;
+            border-radius: .5rem;
+            border: 1px solid #ccc7;
+            background: color-mix(in oklab, Canvas, transparent 2%);
+            flex: 1;
+        }
+
+        #cContent:focus-visible {
+            outline: none;
+            border-color: #6c63ff;
+            box-shadow: 0 0 0 3px color-mix(in oklab, #6c63ff, Canvas 65%);
+        }
+
+        .editor-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .35rem;
+            margin: .25rem 0 .5rem;
+        }
+
+        .editor-toolbar .btn {
+            padding: .35rem .5rem;
+            font-size: .9rem;
+        }
+
+        .editor-toolbar .spacer {
+            flex: 0 0 1px;
+            height: 28px;
+            background: #ccc6;
+            margin: 0 .15rem;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5.5.1/github-markdown.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
+</head>
+
+<body>
+    <nav class="nav">
+        <div class="nav-inner container">
+            <div class="brand"><span class="dot"></span> Blogger Admin</div>
+            <div class="nav-actions">
+                <a class="btn" href="/">Home</a>
+                <button id="openCreateBtn" class="btn primary">Create</button>
+                <img id="userAvatar" class="avatar" alt="avatar" />
+                <span id="userLabel" class="muted"></span>
+                <button id="loginBtn" class="btn primary">Login</button>
+                <button id="logoutBtn" class="btn" style="display:none">Logout</button>
+                <button id="refreshBtn" class="btn">Refresh</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Manage Posts</h1>
+
+        <section class="card" style="margin-top:1rem">
+            <h2>Posts</h2>
+            <table id="postsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Author</th>
+                        <th>Title</th>
+                        <th>Description</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+
+    </div>
+
+    <template id="rowTmpl">
+        <tr>
+            <td class="mono id"></td>
+            <td class="author"></td>
+            <td class="title"></td>
+            <td class="description"></td>
+            <td class="timestamp mono"></td>
+            <td>
+                <div class="actions">
+                    <a class="btn" href="#" class="view">View</a>
+                    <button class="edit">Edit</button>
+                    <button class="del">Delete</button>
+                </div>
+            </td>
+        </tr>
+    </template>
+
+    <dialog id="editDialog">
+        <form method="dialog" class="dlg-inner">
+            <h3>Edit Post <span id="editId" class="mono"></span></h3>
+            <div class="row">
+                <div>
+                    <label>Author</label>
+                    <div id="editAuthorText" class="muted"></div>
+                </div>
+                <div>
+                    <label>Title</label>
+                    <input id="editTitle" />
+                </div>
+            </div>
+            <div class="row">
+                <div>
+                    <label>Description</label>
+                    <input id="editDescription" />
+                </div>
+                <div>
+                    <label>Content (Markdown)</label>
+                    <textarea id="editContent" rows="10"></textarea>
+                </div>
+            </div>
+            <div class="actions" style="margin-top:.5rem">
+                <button id="saveEdit" value="save" class="btn primary">Save</button>
+                <button value="cancel" class="btn">Cancel</button>
+                <span id="editMsg" class="muted"></span>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="createDialog">
+        <form method="dialog" class="dlg-inner">
+            <h3>Create Post</h3>
+            <div class="row">
+                <div>
+                    <label>Title</label>
+                    <input id="cTitle" placeholder="Enter a concise title" />
+                </div>
+                <div>
+                    <label>Thumbnail</label>
+                    <div class="actions" style="margin-bottom:.35rem">
+                        <button id="openThumbBtn" class="btn">Select Thumbnail</button>
+                    </div>
+                    <input id="cThumbSelected" readonly placeholder="No thumbnail selected" />
+                </div>
+            </div>
+            <div class="row">
+                <div style="grid-column:1/-1">
+                    <label>Description</label>
+                    <input id="cDescription" placeholder="Short summary" />
+                </div>
+            </div>
+            <div class="split" style="margin-top:.5rem">
+                <div>
+                    <label>Content (Markdown)</label>
+                    <div class="editor-toolbar">
+                        <button type="button" class="btn" id="tbH1">H1</button>
+                        <button type="button" class="btn" id="tbH2">H2</button>
+                        <span class="spacer"></span>
+                        <button type="button" class="btn" id="tbBold"><strong>B</strong></button>
+                        <button type="button" class="btn" id="tbItalic"><em>I</em></button>
+                        <button type="button" class="btn" id="tbCode">Code</button>
+                        <button type="button" class="btn" id="tbQuote">Quote</button>
+                        <span class="spacer"></span>
+                        <button type="button" class="btn" id="tbBullets">• List</button>
+                        <button type="button" class="btn" id="tbNumbers">1. List</button>
+                        <button type="button" class="btn" id="tbLink">Link</button>
+                        <button type="button" class="btn" id="tbImage">Image</button>
+                        <button type="button" class="btn" id="tbFence">Fence</button>
+                        <button type="button" class="btn" id="tbHR">HR</button>
+                    </div>
+                    <textarea id="cContent" rows="12" placeholder="# Heading
+
+Write your post in Markdown..."></textarea>
+                </div>
+                <div>
+                    <label>Preview</label>
+                    <div id="createPreview" class="markdown-body">Start typing markdown to see preview...</div>
+                </div>
+            </div>
+            <div class="alert warn" role="alert" style="margin:.5rem 0">
+                <strong>Heads up:</strong> Publishing will notify all Warpdrive users and your post will appear on the
+                home page of the Warpdrive Console.
+            </div>
+            <div class="actions" style="margin-top:.5rem">
+                <button id="doCreate" value="save" class="btn primary">Publish</button>
+                <button value="cancel" class="btn">Cancel</button>
+                <span id="createMsg" class="muted"></span>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="thumbDialog">
+        <form method="dialog" class="dlg-inner">
+            <h3>Select Thumbnail</h3>
+            <div class="actions" style="margin-bottom:.5rem">
+                <input type="file" id="cThumbFile" accept="image/*" />
+                <button id="cThumbUpload" class="btn">Upload</button>
+            </div>
+            <div id="cThumbGrid" class="grid"></div>
+            <div class="actions" style="margin-top:.75rem">
+                <button value="ok" class="btn primary">Done</button>
+                <button value="cancel" class="btn">Cancel</button>
+            </div>
+        </form>
+    </dialog>
+
+    <div id="authOverlay" class="overlay">
+        <div class="auth-card">
+            <h2 id="authTitle">Sign in to manage posts</h2>
+            <div id="authLoginBlock">
+                <p class="muted">You'll be redirected to sign in.</p>
+                <div class="actions" style="margin:.5rem 0 1rem">
+                    <button id="overlayLogin" class="btn primary">Login</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const AUTH = {
+            authorizeUrl: 'https://rotur.dev/auth',
+            redirectUri: window.location.origin + '/admin',
+            storageKey: 'auth_token',
+            userInfoKey: 'auth_user',
+        };
+        const VALIDATOR_KEY = 'warpdrive-blogger';
+
+        function getToken() {
+            return localStorage.getItem(AUTH.storageKey) || '';
+        }
+
+        function setToken(t) {
+            if (t) localStorage.setItem(AUTH.storageKey, t);
+            else localStorage.removeItem(AUTH.storageKey);
+        }
+
+        function setUser(u) {
+            if (u) localStorage.setItem(AUTH.userInfoKey, JSON.stringify(u));
+            else localStorage.removeItem(AUTH.userInfoKey);
+        }
+
+        function getUser() {
+            try {
+                return JSON.parse(localStorage.getItem(AUTH.userInfoKey) || 'null');
+            } catch {
+                return null;
+            }
+        }
+
+        function apiHeaders() {
+            const h = { 'Content-Type': 'application/json' };
+            const t = getToken();
+            if (t) h['Authorization'] = 'Bearer ' + t;
+            return h;
+        }
+
+        function base64UrlDecode(s) {
+            try {
+                s = s.replace(/-/g, '+').replace(/_/g, '/');
+                const p = s.length % 4;
+                if (p) s += '='.repeat(4 - p);
+                return atob(s);
+            } catch {
+                return '';
+            }
+        }
+
+        function decodeJwtClaims(tok) {
+            const parts = tok.split('.');
+            if (parts.length < 2) return null;
+            try {
+                return JSON.parse(base64UrlDecode(parts[1]));
+            } catch {
+                return null;
+            }
+        }
+
+        function deriveUserFromToken() {
+            const t = getToken();
+            if (!t) {
+                setUser(null);
+                return;
+            }
+            const c = decodeJwtClaims(t) || {};
+            const username = c.username || c.preferred_username || c.handle || c.sub || '';
+            const name = c.name || username;
+            if (username) setUser({ username, name });
+            else setUser(null);
+        }
+
+        function login() {
+            const u = new URL(AUTH.authorizeUrl);
+            u.searchParams.set('return_to', AUTH.redirectUri);
+            u.searchParams.set('system', 'warpdrive');
+            location.href = u.toString();
+        }
+
+        function logout() {
+            setToken('');
+            localStorage.removeItem(AUTH.userInfoKey);
+            updateAuthUI();
+        }
+
+        async function fetchUserFromRotur() {
+            const tok = getToken();
+            if (!tok) return null;
+            try {
+                const url = `https://social.rotur.dev/get_user?auth=${encodeURIComponent(tok)}`;
+                const r = await fetch(url, { credentials: 'omit', mode: 'cors' });
+                if (!r.ok) return null;
+                const j = await r.json();
+                const username = j.username || j.handle || j.user || j.login || '';
+                const name = j.name || username || '';
+                if (username) {
+                    setUser({ username, name });
+                    return { username, name };
+                }
+                return null;
+            } catch {
+                return null;
+            }
+        }
+
+        async function parseTokenFromLocation() {
+            const url = new URL(window.location);
+            const cand = url.searchParams.get('token');
+            if (!cand) return;
+            
+            setToken(cand);
+
+            let u = null;
+            try {
+                u = await fetchUserFromRotur();
+            } catch (err) {
+                // ignore
+            }
+            
+            if (!u) {
+                try {
+                    const val = await generateValidator();
+                    const uname = (val.split(',')[0] || '').trim();
+                    if (uname) {
+                        setUser({ username: uname, name: uname });
+                        u = { username: uname, name: uname };
+                    }
+                } catch (err) {
+                    // ignore
+                }
+            }
+            
+            if (!u) {
+                deriveUserFromToken();
+                u = getUser();
+            }
+
+            url.searchParams.delete('token');
+            url.searchParams.delete('access_token');
+            history.replaceState(null, '', url.pathname + url.search + url.hash);
+        }
+
+        function updateAuthUI() {
+            const has = !!getToken();
+            document.getElementById('loginBtn').style.display = has ? 'none' : '';
+            document.getElementById('logoutBtn').style.display = has ? '' : 'none';
+            const u = getUser();
+            const label = document.getElementById('userLabel');
+            const avatar = document.getElementById('userAvatar');
+            if (has && u && u.username) {
+                label.textContent = u.username;
+                avatar.src = `https://avatars.rotur.dev/${encodeURIComponent(u.username)}`;
+                avatar.style.display = '';
+            } else {
+                label.textContent = has ? 'Logged in' : '';
+                avatar.removeAttribute('src');
+                avatar.style.display = 'none';
+            }
+            const ov = document.getElementById('authOverlay');
+            ov.classList.toggle('show', !has);
+        }
+
+        async function apiFetch(url, opts = {}) {
+            const init = { ...opts, headers: { ...(opts.headers || {}), ...apiHeaders() } };
+            const r = await fetch(url, init);
+            if (r.status === 401) throw new Error('unauthorized');
+            return r;
+        }
+
+        async function generateValidator() {
+            const tok = getToken();
+            if (!tok) throw new Error('no token');
+            const u = `https://social.rotur.dev/generate_validator?auth=${encodeURIComponent(tok)}&key=${encodeURIComponent(VALIDATOR_KEY)}`;
+            const r = await fetch(u, { credentials: 'omit', mode: 'cors' });
+            if (!r.ok) throw new Error('validator');
+            const ct = r.headers.get('content-type') || '';
+            if (ct.includes('application/json')) {
+                const j = await r.json();
+                const v = j.validator || j.value || j.v || j.token || '';
+                if (typeof v === 'string' && v.includes(',')) return v;
+            }
+            const t = await r.text();
+            if (t && t.includes(',')) return t.trim();
+            throw new Error('bad validator');
+        }
+
+        async function apiFetchProtected(url, opts = {}) {
+            const v = await generateValidator();
+            const init = { ...opts, headers: { 'X-Rotur-Validator': v, ...(opts.headers || {}), ...apiHeaders() } };
+            const r = await fetch(url, init);
+            if (r.status === 401) throw new Error('unauthorized');
+            return r;
+        }
+
+        const api = {
+            list: async () => {
+                const r = await apiFetch('/api/posts');
+                if (!r.ok) throw new Error('list');
+                return r.json();
+            },
+            get: async (id) => {
+                const r = await apiFetch(`/api/posts/${id}`);
+                if (!r.ok) throw new Error('get');
+                return r.json();
+            },
+            create: async (data) => {
+                const r = await apiFetchProtected('/api/posts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+                if (!r.ok) throw new Error('create');
+                return r.json();
+            },
+            listThumbs: async () => {
+                const r = await apiFetch('/api/thumbnails');
+                if (!r.ok) throw new Error('thumbs');
+                return r.json();
+            },
+            uploadThumb: async (file) => {
+                const fd = new FormData();
+                fd.append('file', file);
+                const r = await apiFetchProtected('/api/thumbnails', { method: 'POST', body: fd });
+                if (!r.ok) throw new Error('upload');
+                return r.json();
+            },
+            patch: async (id, data) => {
+                const r = await apiFetch(`/api/posts/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+                if (!r.ok) throw new Error('patch');
+                return r.json();
+            },
+            del: async (id) => {
+                const r = await apiFetch(`/api/posts/${id}`, { method: 'DELETE' });
+                if (!r.ok && r.status !== 204) throw new Error('del');
+            },
+        };
+
+        api.patch = async (id, data) => {
+            const r = await apiFetchProtected(`/api/posts/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+            if (!r.ok) throw new Error('patch');
+            return r.json();
+        };
+        api.del = async (id) => {
+            const r = await apiFetchProtected(`/api/posts/${id}`, { method: 'DELETE' });
+            if (!r.ok && r.status !== 204) throw new Error('del');
+        };
+
+        const el = (s) => document.querySelector(s);
+        const fmtTime = (s) => new Date(s).toLocaleString();
+
+        async function refresh() {
+            const tbody = el('#postsTable tbody');
+            tbody.innerHTML = '';
+            const items = await api.list();
+            items.sort((a, b) => b.timestamp - a.timestamp);
+            for (const p of items) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td class="mono">${p.id}</td><td>${p.author}</td><td>${p.title}</td><td>${p.description || ''}</td><td class="mono">${fmtTime(p.timestamp)}</td><td><div class="actions"><a class="btn" href="/post/${p.id}">View</a> <button class="edit">Edit</button> <button class="del">Delete</button></div></td>`;
+                tr.querySelector('.edit').onclick = async () => {
+                    const full = await api.get(p.id);
+                    const dlg = el('#editDialog');
+                    el('#editId').textContent = `#${full.id}`;
+                    el('#editAuthorText').textContent = full.author;
+                    el('#editTitle').value = full.title;
+                    el('#editDescription').value = full.description || '';
+                    el('#editContent').value = full.content || '';
+                    el('#editMsg').textContent = '';
+                    dlg.showModal();
+                };
+                tr.querySelector('.del').onclick = async () => {
+                    if (!confirm('Delete this post?')) return;
+                    await api.del(p.id);
+                    await refresh();
+                };
+                tbody.appendChild(tr);
+            }
+        }
+
+        document.getElementById('loginBtn').onclick = login;
+        document.getElementById('overlayLogin').onclick = login;
+        document.getElementById('logoutBtn').onclick = logout;
+        document.getElementById('refreshBtn').onclick = refresh;
+
+        function renderMarkdown(md) {
+            if (!window.marked || !window.DOMPurify) return md;
+            marked.setOptions({ breaks: true });
+            const raw = marked.parse(md || '');
+            return DOMPurify.sanitize(raw);
+        }
+
+        function updateCreatePreview() {
+            const html = renderMarkdown(document.getElementById('cContent').value);
+            const pv = document.getElementById('createPreview');
+            pv.innerHTML = html;
+            if (window.hljs) {
+                pv.querySelectorAll('pre code').forEach((elc) => {
+                    try {
+                        hljs.highlightElement(elc);
+                    } catch { }
+                });
+            }
+        }
+
+        async function loadThumbs() {
+            const grid = document.getElementById('cThumbGrid');
+            if (!grid) return;
+            grid.innerHTML = '';
+            try {
+                const items = await api.listThumbs();
+                items.forEach((p) => {
+                    const d = document.createElement('div');
+                    d.className = 'thumb';
+                    d.innerHTML = `<img src="${p}" style="width:100%;height:90px;object-fit:cover">`;
+                    d.onclick = () => {
+                        document.getElementById('cThumbSelected').value = p;
+                        grid.querySelectorAll('.thumb').forEach((n) => n.classList.remove('selected'));
+                        d.classList.add('selected');
+                    };
+                    grid.appendChild(d);
+                });
+            } catch { }
+        }
+
+        document.getElementById('openCreateBtn').onclick = async () => {
+            const dlg = document.getElementById('createDialog');
+            document.getElementById('cTitle').value = '';
+            document.getElementById('cDescription').value = '';
+            document.getElementById('cContent').value = '';
+            document.getElementById('cThumbSelected').value = '';
+            document.getElementById('createMsg').textContent = '';
+            updateCreatePreview();
+            dlg.showModal();
+        };
+
+        const openThumbBtn = document.getElementById('openThumbBtn');
+        if (openThumbBtn) {
+            openThumbBtn.onclick = async (e) => {
+                e.preventDefault();
+                const dlg = document.getElementById('thumbDialog');
+                await loadThumbs();
+                dlg.showModal();
+            };
+        }
+
+        const cThumbUploadBtn = document.getElementById('cThumbUpload');
+        if (cThumbUploadBtn) {
+            cThumbUploadBtn.onclick = async (e) => {
+                e.preventDefault();
+                const f = document.getElementById('cThumbFile').files[0];
+                const msg = document.getElementById('createMsg');
+                if (!f) return;
+                msg.textContent = 'Uploading...';
+                try {
+                    const j = await api.uploadThumb(f);
+                    document.getElementById('cThumbSelected').value = j.path;
+                    await loadThumbs();
+                    msg.textContent = 'Uploaded';
+                } catch {
+                    msg.textContent = 'Upload failed';
+                }
+            };
+        }
+
+        const cContentEl = document.getElementById('cContent');
+        if (cContentEl) {
+            cContentEl.addEventListener('input', updateCreatePreview);
+            cContentEl.addEventListener('keydown', (e) => {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const el = cContentEl;
+                    const start = el.selectionStart;
+                    const end = el.selectionEnd;
+                    const val = el.value;
+                    const sel = val.substring(start, end);
+                    if (e.shiftKey) {
+                        const before = val.lastIndexOf('\n', start - 1) + 1;
+                        const after = end;
+                        const block = val.substring(before, after).replace(/^(\t| {1,4})/gm, '');
+                        el.value = val.substring(0, before) + block + val.substring(after);
+                        const delta = val.substring(before, after).length - block.length;
+                        el.selectionStart = start - Math.min(4, delta);
+                        el.selectionEnd = end - delta;
+                    } else {
+                        if (sel.includes('\n')) {
+                            const before = val.lastIndexOf('\n', start - 1) + 1;
+                            const after = end;
+                            const block = val.substring(before, after).replace(/^/gm, '    ');
+                            el.value = val.substring(0, before) + block + val.substring(after);
+                            el.selectionStart = start + 4;
+                            el.selectionEnd = end + (block.length - (after - before));
+                        } else {
+                            el.value = val.substring(0, start) + '    ' + val.substring(end);
+                            el.selectionStart = el.selectionEnd = start + 4;
+                        }
+                    }
+                    updateCreatePreview();
+                }
+                if ((e.metaKey || e.ctrlKey) && (e.key === 'b' || e.key === 'i')) {
+                    e.preventDefault();
+                    const action = e.key === 'b' ? 'bold' : 'italic';
+                    applyInline(action);
+                }
+            });
+        }
+
+        function surroundSelection(prefix, suffix) {
+            const el = cContentEl;
+            const start = el.selectionStart;
+            const end = el.selectionEnd;
+            const val = el.value;
+            const before = val.slice(0, start);
+            const mid = val.slice(start, end);
+            const after = val.slice(end);
+            el.value = before + prefix + mid + suffix + after;
+            const cursor = start + prefix.length + mid.length;
+            el.selectionStart = el.selectionEnd = cursor;
+            updateCreatePreview();
+            el.focus();
+        }
+
+        function linePrefix(prefix) {
+            const el = cContentEl;
+            const start = el.selectionStart;
+            const end = el.selectionEnd;
+            const val = el.value;
+            const ls = val.lastIndexOf('\n', start - 1) + 1;
+            const le = val.indexOf('\n', end);
+            const until = le === -1 ? val.length : le;
+            const block = val.substring(ls, until).replace(/(^|\n)/g, `$1${prefix}`);
+            el.value = val.substring(0, ls) + block + val.substring(until);
+            el.selectionStart = ls;
+            el.selectionEnd = ls + block.length;
+            updateCreatePreview();
+            el.focus();
+        }
+
+        function applyInline(kind) {
+            if (kind === 'bold') surroundSelection('**', '**');
+            else if (kind === 'italic') surroundSelection('*', '*');
+            else if (kind === 'code') surroundSelection('`', '`');
+        }
+
+        function applyLink() {
+            const url = prompt('Enter URL', 'https://');
+            if (!url) return;
+            surroundSelection('[', `](${url})`);
+        }
+
+        function applyImage() {
+            const url = prompt('Enter image URL', '/thumbnails/your-image.jpg');
+            if (!url) return;
+            surroundSelection('![](', `)`);
+            const el = cContentEl;
+            const i = el.value.indexOf('![](');
+            void i;
+        }
+
+        function applyFence() {
+            surroundSelection('\n```\n', '\n```\n');
+        }
+
+        function applyHR() {
+            surroundSelection('\n\n---\n\n', '');
+        }
+
+        const byId = (id) => document.getElementById(id);
+        byId('tbH1').onclick = () => linePrefix('# ');
+        byId('tbH2').onclick = () => linePrefix('## ');
+        byId('tbBold').onclick = () => applyInline('bold');
+        byId('tbItalic').onclick = () => applyInline('italic');
+        byId('tbCode').onclick = () => applyInline('code');
+        byId('tbQuote').onclick = () => linePrefix('> ');
+        byId('tbBullets').onclick = () => linePrefix('- ');
+        byId('tbNumbers').onclick = () => linePrefix('1. ');
+        byId('tbLink').onclick = () => applyLink();
+        byId('tbImage').onclick = () => applyImage();
+        byId('tbFence').onclick = () => applyFence();
+        byId('tbHR').onclick = () => applyHR();
+
+        document.getElementById('doCreate').onclick = async (e) => {
+            if (e) e.preventDefault();
+            const user = getUser();
+            const sel = document.getElementById('cThumbSelected').value.trim();
+            const data = {
+                author: (user && user.username) || '',
+                title: document.getElementById('cTitle').value.trim(),
+                description: document.getElementById('cDescription').value.trim(),
+                content: document.getElementById('cContent').value,
+                thumbnail: sel || '',
+            };
+            const msg = document.getElementById('createMsg');
+            msg.textContent = '';
+            if (!data.author) {
+                msg.textContent = 'Please login first.';
+                return;
+            }
+            if (!data.title) {
+                msg.textContent = 'Title is required.';
+                return;
+            }
+            try {
+                const created = await api.create(data);
+                msg.textContent = `Created #${created.id}`;
+                location.href = `/post/${created.id}`;
+            } catch (err) {
+                msg.textContent = 'Create failed';
+            }
+        };
+
+        (async () => {
+            await parseTokenFromLocation();
+            if (!getUser()) {
+                const u = await fetchUserFromRotur();
+                if (!u) {
+                    deriveUserFromToken();
+                }
+            }
+            updateAuthUI();
+            if (getToken()) {
+                refresh();
+            }
+        })();
+    </script>
+</body>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.9/dist/purify.min.js"></script>
+
+</html>

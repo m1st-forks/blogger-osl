@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Warpdrive Blog</title>
+    <style>
+        :root {
+            color-scheme: light dark;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 1.25rem;
+        }
+
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid #ccc3;
+            background: color-mix(in oklab, Canvas, transparent 10%);
+        }
+
+        .nav-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: .75rem 1.25rem;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            font-weight: 600;
+        }
+
+        .brand .dot {
+            width: .65rem;
+            height: .65rem;
+            border-radius: 50%;
+            background: #6c63ff;
+            display: inline-block;
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: .6rem;
+            align-items: center;
+        }
+
+        .btn {
+            appearance: none;
+            border: 1px solid #ccc7;
+            background: color-mix(in oklab, Canvas, transparent 5%);
+            padding: .45rem .7rem;
+            border-radius: .5rem;
+            cursor: pointer;
+        }
+
+        .btn.primary {
+            background: #6c63ff;
+            color: white;
+            border-color: #6c63ff;
+        }
+
+        .btn.danger {
+            background: #b00020;
+            color: white;
+            border-color: #b00020;
+        }
+
+        .btn:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+        }
+
+        h1 {
+            margin: 1rem 0 .5rem;
+            font-size: 1.6rem;
+        }
+
+        h2 {
+            margin: 1.25rem 0 .5rem;
+            font-size: 1.2rem;
+        }
+
+        .card {
+            border: 1px solid #ccc6;
+            border-radius: .75rem;
+            padding: 1rem;
+            background: color-mix(in oklab, Canvas, transparent 5%);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        @media (min-width: 900px) {
+            .grid {
+                grid-template-columns: 1.1fr .9fr;
+            }
+        }
+
+        label {
+            font-size: .9rem;
+            margin-bottom: .25rem;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: .5rem .6rem;
+            border-radius: .5rem;
+            border: 1px solid #ccc7;
+            background: color-mix(in oklab, Canvas, transparent 2%);
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th,
+        td {
+            border-bottom: 1px solid #ccc5;
+            padding: .55rem .5rem;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            font-size: .9rem;
+            text-transform: uppercase;
+            letter-spacing: .02em;
+            opacity: .8;
+        }
+
+        .muted {
+            opacity: .75;
+            font-size: .9em;
+        }
+
+        .actions {
+            display: inline-flex;
+            gap: .4rem;
+        }
+
+        .error {
+            color: #b00020;
+        }
+
+        .success {
+            color: #0a7a0a;
+        }
+
+        .mono {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        }
+
+        dialog {
+            border: 1px solid #ccc7;
+            border-radius: .75rem;
+            padding: 0;
+            max-width: 800px;
+            width: 90vw;
+        }
+
+        dialog .dlg-inner {
+            padding: 1rem;
+        }
+
+        dialog::backdrop {
+            backdrop-filter: blur(1px);
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: color-mix(in oklab, Canvas, transparent 10%);
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .overlay.show {
+            display: flex;
+        }
+
+        .auth-card {
+            border: 1px solid #ccc6;
+            border-radius: .75rem;
+            padding: 1rem;
+            width: min(520px, 92vw);
+            background: color-mix(in oklab, Canvas, transparent 5%);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .1);
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: .75rem;
+        }
+
+        .row>div {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .spacer {
+            height: .5rem;
+        }
+
+        .kbd {
+            border: 1px solid #ccc7;
+            border-bottom-width: 2px;
+            border-radius: .35rem;
+            padding: .05rem .3rem;
+            font-size: .85em;
+        }
+
+        .avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1px solid #ccc7;
+            object-fit: cover;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="nav">
+        <div class="nav-inner container">
+            <div class="brand"><span class="dot"></span> Warpdrive</div>
+            <div class="nav-actions">
+                <a class="btn" href="/admin">Admin</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Latest Posts</h1>
+        <div id="postsGrid" class="grid" style="grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));"></div>
+    </div>
+
+
+
+    <script>
+        const AUTH = {
+            authorizeUrl: 'https://rotur.dev/auth',
+            redirectUri: window.location.origin + '/',
+            storageKey: 'auth_token',
+            userInfoKey: 'auth_user'
+        };
+
+        function getToken() {
+            return localStorage.getItem(AUTH.storageKey) || '';
+        }
+        function setToken(t) {
+            t ? localStorage.setItem(AUTH.storageKey, t) : localStorage.removeItem(AUTH.storageKey);
+        }
+        function setUser(u) {
+            u ? localStorage.setItem(AUTH.userInfoKey, JSON.stringify(u)) : localStorage.removeItem(AUTH.userInfoKey);
+        }
+        function getUser() {
+            try {
+                return JSON.parse(localStorage.getItem(AUTH.userInfoKey) || 'null');
+            } catch {
+                return null;
+            }
+        }
+        function apiHeaders() {
+            return { 'Content-Type': 'application/json' };
+        }
+        function base64UrlDecode(str) {
+            try {
+                str = str.replace(/-/g, '+').replace(/_/g, '/');
+                const pad = str.length % 4; if (pad) str += '='.repeat(4 - pad);
+                return atob(str);
+            } catch {
+                return '';
+            }
+        }
+        function decodeJwtClaims(tok) {
+            const parts = tok.split('.');
+            if (parts.length < 2) return null;
+            try {
+                return JSON.parse(base64UrlDecode(parts[1]));
+            } catch {
+                return null;
+            }
+        }
+        function deriveUserFromToken() {
+            const t = getToken();
+            if (!t) {
+                setUser(null);
+                return;
+            }
+            const c = decodeJwtClaims(t) || {};
+            const username = c.username || c.preferred_username || c.handle || c.sub || '';
+            const name = c.name || username;
+            if (username) setUser({ username, name });
+            else setUser(null);
+        }
+        function login() { }
+        function logout() { }
+        async function fetchUserFromRotur() { return null }
+
+        async function parseTokenFromLocation() { }
+        function updateAuthUI() { }
+
+        async function apiFetch(url, opts = {}) {
+            const init = {
+                ...opts,
+                headers: {
+                    ...(opts.headers || {}),
+                    ...apiHeaders()
+                }
+            };
+            const r = await fetch(url, init);
+            if (r.status === 401) throw new Error('unauthorized');
+            return r;
+        }
+
+        const api = {
+            list: async () => {
+                const r = await fetch('/api/posts');
+                if (!r.ok) throw new Error('list');
+                return r.json();
+            }
+        };
+
+        const el = sel => document.querySelector(sel);
+        const fmtTime = s => new Date(s).toLocaleString();
+
+        async function refresh() {
+            const grid = document.getElementById('postsGrid');
+            grid.innerHTML = '';
+            const items = await api.list();
+            items.sort((a, b) => b.timestamp - a.timestamp);
+            for (const p of items) {
+                const card = document.createElement('a');
+                card.href = `/post/${p.id}`;
+                card.className = 'card link';
+                card.innerHTML = `${p.thumbnail ? `<img src="${p.thumbnail}" alt="thumb" style="width:100%;height:160px;object-fit:cover;border-radius:.5rem;">` : ''}<h3 style="margin:.5rem 0 0">${p.title}</h3><div class="muted" style="margin:.25rem 0 .5rem">by ${p.author} • ${new Date(p.timestamp).toLocaleDateString()}</div><p style="margin:0">${(p.description || '').slice(0, 140)}</p>`;
+                grid.appendChild(card);
+            }
+        }
+        (async () => { await refresh() })();
+    </script>
+</body>
+
+</html>
