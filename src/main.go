@@ -67,9 +67,8 @@ func main() {
 	r.GET("/create", func(c *gin.Context) {
 		c.Redirect(302, "/admin")
 	})
-	r.GET("/post/:id", func(c *gin.Context) {
-		c.File(filepath.Join(staticDir, "post.html"))
-	})
+	// Dynamic post page with OG meta for rich embeds (Discord/Twitter)
+	r.GET("/post/:id", postPage)
 	r.NoRoute(func(c *gin.Context) {
 		p := c.Request.URL.Path
 		if p == "/api" || strings.HasPrefix(p, "/api/") {
