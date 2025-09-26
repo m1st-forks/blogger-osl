@@ -1,0 +1,93 @@
+int nextID = 1
+array posts = []
+
+def saveToDiskLocked() boolean (
+	string dir = fs.GetDir(postsFilePath)
+	if dir != "." and dir != "" (
+        if !fs.MkdirAll(dir) (
+            log "failed to create dir"
+            return false
+        )
+    )
+
+    log posts.JsonStringify()
+	any[] ps = arrays.Clone(posts)
+    log ps.JsonStringify()
+	ps = arrays.SortByNum(ps, "id")
+    log ps.JsonStringify()
+
+	object sf = {nextID, posts: ps}
+	string b = sf.JsonStringify()
+	if b == "" (
+        log "failed to serialize posts"
+        return false
+    )
+	string tmp = postsFilePath + ".tmp"
+	if !fs.WriteFile(tmp, b) (
+        log "failed to write posts file"
+		return false
+    )
+	fs.Rename(tmp, postsFilePath)
+    return true
+)
+
+def loadFromDisk() boolean (
+	postsMu.Lock()
+
+	string b = fs.ReadFile(postsFilePath)
+	if b == "" (
+        postsMu.Unlock()
+		return false
+    )
+	
+    sf := b.JsonParse()
+	nextID = sf.nextID.toInt()
+	for i sf.posts.len (
+		p := sf.posts[i]
+		if p.id >= nextID (
+			nextID = p.id.toInt() + 1
+        )
+    )
+    posts = sf.posts
+    postsMu.Unlock()
+    return true
+)
+
+def contentFilePath(int id) string (
+	return filepath.Join(postsDir, fmt.Sprintf("%d.md", id))
+)
+
+def writeContentLocked(int id, string content) boolean (
+	string dir = postsDir
+	if dir != "." and dir != "" (
+		if !fs.MkdirAll(dir) (
+            log "failed to create dir in writeContentLocked()"
+			return false
+        )
+    )
+	string path = contentFilePath(id)
+	string tmp = path ++ ".tmp"
+	if !fs.WriteFile(tmp, content) (
+		log "failed to write content in writeContentLocked()"
+        return false
+    )
+	os.Rename(tmp, path)
+    return true
+)
+
+def readContent(int id) string (
+	string b = fs.ReadFile(contentFilePath(id))
+	if b == "" (
+		log "failed to read content"
+		return ""
+    )
+	return b
+)
+
+def deleteContentLocked(int id) boolean (
+	boolean success = fs.Remove(contentFilePath(id))
+	if !success (
+		log "failed to delete content"
+    )
+    return success
+)

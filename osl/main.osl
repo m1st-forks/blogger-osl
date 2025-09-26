@@ -1,0 +1,104 @@
+import "osl/fs"
+import "osl/arrays"
+import "osl/objects"
+import "osl/requests"
+import "osl/lock"
+
+import "time"
+import "mime/multipart"
+import "github.com/gin-gonic/gin"
+import "github.com/joho/godotenv"
+
+import "./storage.osl"
+import "./posts.osl"
+import "./auth.osl"
+import "./helpers.osl"
+
+string postsFilePath = "posts.json"
+string postsDir = "./posts"
+string thumbsDir = "./thumbnails"
+
+postsMu := lock.RWMutex()
+
+def main() (
+    gin.SetMode("release")
+    r := gin.Default()
+
+    err := godotenv.Load()
+    if err != null (
+        log err
+    )
+
+    // Configure paths from environment variables
+    if os.Getenv("POSTS_JSON") != "" (
+        postsFilePath = os.Getenv("POSTS_JSON")
+    )
+    
+    // Load posts from disk with error handling
+    if !loadFromDisk() (
+        log "warning: failed to load posts from " ++ postsFilePath
+    )
+
+    if os.Getenv("POSTS_DIR") != "" (
+        postsDir = os.Getenv("POSTS_DIR")
+    )
+    fs.MkdirAll(postsDir)
+
+    if os.Getenv("THUMBS_DIR") != "" (
+        thumbsDir = os.Getenv("THUMBS_DIR")
+    )
+    fs.MkdirAll(thumbsDir)
+
+    api := r.Group("/api")
+    api.GET("/posts", listPosts)
+    api.GET("/posts/:id", getPost)
+
+    api.POST("/posts", requireValidator, requireAllowedUser, createPost)
+    api.PATCH("/posts/:id", requireValidator, requireAllowedUser, patchPost)
+    api.DELETE("/posts/:id", requireValidator, requireAllowedUser, deletePost)
+
+    api.GET("/thumbnails", listThumbnails)
+    api.POST("/thumbnails", requireValidator, requireAllowedUser, uploadThumbnail)
+
+    staticDir := os.Getenv("STATIC_DIR")
+    if staticDir == "" (
+        staticDir = "../static"
+    )
+
+    r.Static("/static", staticDir)
+    r.Static("/thumbnails", thumbsDir)
+    r.GET("/", def(*gin.Context c) -> (
+        c.File(fs.JoinPath(staticDir, "index.html"))
+    ))
+
+    r.GET("/admin", def(*gin.Context c) -> (
+        c.File(fs.JoinPath(staticDir, "admin.html"))
+    ))
+
+    r.GET("/create", def(*gin.Context c) -> (
+        c.Redirect(302, "/admin")
+    ))
+
+    r.GET("/post/:id", def(*gin.Context c) -> (
+        c.File(fs.JoinPath(staticDir, "post.html"))
+    ))
+
+    r.NoRoute(def(*gin.Context c) -> (
+        string p = c.Request.URL.Path.toStr()
+        if p == "/api" or p.startsWith("/api/") (
+            c.AbortWithStatus(404)
+            return
+        )
+        // For unknown paths, send home page
+        c.File(fs.JoinPath(staticDir, "index.html"))
+    ))
+
+    string port = os.Getenv("PORT")
+    if port == "" (
+        port = "8080"
+    )
+    err = r.Run(":" ++ port)
+    if err != null (
+        log "Fatal error starting server: " ++ err.toStr()
+    )
+)

@@ -1,0 +1,267 @@
+
+def createPost(*gin.Context c) (
+    string strInput = c.Request.Body
+    object input = strInput.JsonParse()
+    string ifUser = validatedUser(c)
+	if ifUser != "" (
+		input.author = ifUser
+	) else (
+		c.JSON(401, {error: "missing validator"})
+		return
+	)
+	if input.author == "" or input.title == "" (
+		c.JSON(400, {error: "author and title are required"})
+		return
+	)
+
+	postsMu.Lock()
+	int id = nextID
+	nextID = id + 1
+	object p = {
+        id: id,
+        author: input.author.toStr(),
+        title: input.title.toStr(),
+        description: input.description.toStr(),
+        timestamp: time.Now().UnixMilli().toInt(),
+        thumbnail: input.thumbnail.toStr()
+    }
+    while posts.len < id (
+        posts = posts.append({})
+    )
+	posts[id] = p
+	if !writeContentLocked(id, input.content) (
+		delete(posts, id)
+		nextID = id - 1
+		postsMu.Unlock()
+		c.JSON(500, {error: "failed to write content"})
+		return
+    )
+	if !saveToDiskLocked() (
+		delete(posts, id)
+		deleteContentLocked(id)
+		nextID = id + 1
+		postsMu.Unlock()
+		c.JSON(500, {error: "failed to persist post"})
+		return
+    )
+	postsMu.Unlock()
+
+	c.JSON(201, p)
+)
+
+def listPosts(*gin.Context c) (
+	postsMu.RLock()
+	c.JSON(200, arrays.Clone(posts))
+    postsMu.RUnlock()
+)
+
+def getPost(*gin.Context c) (
+	int id = parseID(c)
+	if id <= 0 (
+		return
+    )
+
+    object p = {}
+
+    postsMu.RLock()
+	if id <= posts.len (
+	    p = posts[id]
+        postsMu.RUnlock()
+    ) else (
+        postsMu.RUnlock()
+		c.JSON(404, {error: "post not found"})
+		return
+    )
+	string content = readContent(id)
+    cloned := objects.Clone(p)
+    string thumb = cloned.thumbnail
+    if !thumb.startsWith("/") (
+        cloned.thumbnail = "/" + thumb
+    )
+    cloned.content = content
+	c.JSON(200, cloned)
+)
+
+def patchPost(*gin.Context c) (
+	int id = parseID(c)
+	if id <= 0 (
+		return
+    )
+
+	object body = {}
+	if body.len == 0 (
+		c.JSON(400, {error: "empty body"})
+		return
+    )
+
+	postsMu.Lock()
+	if !id.in(posts) (
+		postsMu.Unlock()
+		c.JSON(404, {error: "post not found"})
+		return
+    )
+    object p = posts[id]
+	boolean contentProvided = false
+    string newContent = ""
+    string prevContent = ""
+    boolean prevContentRead = false
+	if "title".in(body) (
+		if typeof(body.title) != "string" (
+			postsMu.Unlock()
+			c.JSON(400, {error: "title must be a string"})
+			return
+        )
+		p.title = body["title"].toStr()
+    )
+	if "description".in(body) (
+        if typeof(body.description) != "string" (
+			postsMu.Unlock()
+			c.JSON(400, {error: "description must be a string"})
+			return
+        )
+		p.description = body.description.toStr()
+    )
+	if "author".in(body) (
+        if typeof(body.author) != "string" (
+			postsMu.Unlock()
+			c.JSON(400, {error: "author must be a string"})
+			return
+        )
+        string vu = validatedUser(c)
+        string s = body.author.toStr()
+		if vu != "" (
+			if s != vu (
+				postsMu.Unlock()
+				c.JSON(401, {error: "cannot change author"})
+				return
+            )
+			p.author = s
+		) else (
+			postsMu.Unlock()
+			c.JSON(401, {error: "missing validator"})
+			return
+        )
+    )
+    if "content".in(body) (
+        if typeof(body.content) != "string" (
+			postsMu.Unlock()
+			c.JSON(401, {error: "content must be a string"})
+			return
+        )
+		contentProvided = true
+		newContent = body.content.toStr()
+        string c0 = readContent(id)
+		if c0 != "" (
+			prevContent = c0
+			prevContentRead = true
+        )
+		if !writeContentLocked(id, newContent) (
+			postsMu.Unlock()
+			c.JSON(500, {error: "failed to write content"})
+			return
+        )
+    )
+	if "thumbnail".in(body) (
+		if typeof(body.thumbnail) != "string" (
+			postsMu.Unlock()
+			c.JSON(400, {error: "thumbnail must be a string"})
+			return
+        )
+		p.thumbnail = body.thumbnail.toStr()
+    )
+	if !saveToDiskLocked() (
+		if contentProvided and prevContentRead (
+			_ = writeContentLocked(id, prevContent)
+        )
+		postsMu.Unlock()
+		c.JSON(500, {error: "failed to persist changes"})
+		return
+    )
+	postsMu.Unlock()
+
+	c.JSON(200, p)
+)
+
+def deletePost(*gin.Context c) (
+	int id = parseID(c)
+	if id <= 0 (
+		return
+    )
+	postsMu.Lock()
+	object p = {}
+	if id.in(posts) (
+		p = posts[id].@(object)
+		postsMu.Unlock()
+		c.JSON(500, {error: "post not found"})
+		return
+    )
+	object backup = p
+	string prevContent = readContent(id)
+	delete(posts, id)
+	if !deleteContentLocked(id) (
+		posts[id] = @backup
+		postsMu.Unlock()
+		c.JSON(500, {error: "failed to delete content"})
+		return
+    )
+	if !saveToDiskLocked() (
+		posts[id] = &backup
+		_ = writeContentLocked(id, prevContent)
+		postsMu.Unlock()
+		c.JSON(500, {error: "failed to persist deletion"})
+		return
+    )
+	postsMu.Unlock()
+	c.Status(204)
+)
+
+def listThumbnails(*gin.Context c) (
+	string[] entries = fs.ReadDir(thumbsDir)
+	array out = []
+	for i entries.len (
+        string name = entries[i].toStr()
+        string path = fs.JoinPath(thumbsDir, name)
+		if fs.IsDir(path) (
+			continue
+        )
+        out = out.append(path)
+    )
+	c.JSON(200, out)
+)
+
+def uploadThumbnail(*gin.Context c) (
+	file := c.FormFile("file")
+	if file == null (
+		c.JSON(400, {error: "missing file"})
+		return
+	)
+	string name = fs.GetBase(file.Filename)
+	string ext = fs.GetExt(name)
+	if ext == ".png" or ext == ".jpg" or ext == ".jpeg" or ext == ".gif" or ext == ".webp" or ext == ".svg" (
+	) else (
+		c.JSON(400, {error: "unsupported file type"})
+		return
+	)
+
+	string dst = filepath.Join(thumbsDir, name)
+	string base = name.trim(0, name.len - ext.len)
+	int i = 1
+	while true (
+		if !fs.Exists(dst) (
+			break
+		)
+		string cand = base ++ "-" ++ i.toStr() ++ ext
+		dst = filepath.Join(thumbsDir, cand)
+		i = i + 1
+		if i > 1000 (
+			c.JSON(500, {error: "failed to allocate filename"})
+			return
+		)
+	)
+	if c.SaveUploadedFile(file, dst) != null (
+		c.JSON(500, {error: "failed to save file"})
+		return
+	)
+	// return public path
+	c.JSON(201, {path: "/thumbnails/" ++ fs.GetBase(dst)})
+)

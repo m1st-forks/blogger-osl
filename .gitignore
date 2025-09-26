@@ -35,6 +35,10 @@ src/posts/
 src/thumbnails
 src/blogger
 
+osl/posts
+osl/thumbnails
+osl/blogger
+
 .DS_Store
 
 *.json

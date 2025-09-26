@@ -1,0 +1,9 @@
+def parseID(*gin.Context c) int (
+	string idStr = c.Param("id")
+	int id = idStr.toInt()
+	if id <= 0 (
+		c.JSON(400, {error: "invalid id"})
+		return 0
+    )
+	return id
+)

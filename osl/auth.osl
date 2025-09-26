@@ -1,0 +1,81 @@
+
+string roturValidationKey = "warpdrive-blogger"
+
+array allowedUsers = []
+boolean allowedUsersAll = false
+
+def init() (
+	allowedUsers = ["mist", "jax"]
+)
+
+def validateRoturValidator(string validator) string (
+	string v = validator.strip()
+	if v == "" or roturValidationKey == "" (
+		return ""
+    )
+	string username = v
+    int i = v.index(",")
+	if i >= 1 (
+		username = v.trim(1, i - 1).strip()
+    )
+	if username == "" (
+		return ""
+    )
+
+	string endpoint = "https://social.rotur.dev/validate?v=" ++ v ++ "&key=" ++ roturValidationKey
+	string resp = requests.Get(endpoint, {})
+    object data = resp.JsonParse()
+    if data == null (
+        return ""
+    )
+    if data["valid"] == false (
+        return ""
+    )
+	return username
+)
+
+def requireValidator(*gin.Context c) (
+	string validator = c.GetHeader("X-Rotur-Validator").strip()
+	if validator == "" (
+		string auth = c.GetHeader("Authorization")
+		string prefix = "Validator "
+		if auth.startsWith(prefix) (
+			validator = auth.trim(prefix.len, auth.len).strip()
+		)
+    )
+    if validator == "" (
+        c.AbortWithStatusJSON(401, {error: "invalid or missing validator"})
+		return
+    )
+    string username = validateRoturValidator(validator)
+    if username == "" (
+        c.AbortWithStatusJSON(401, {error: "invalid or missing validator"})
+        return
+    )
+    c.Set("username", username)
+	c.Next()
+)
+
+def requireAllowedUser(*gin.Context c) (
+	string username = validatedUser(c)
+	if username == "" (
+		c.AbortWithStatusJSON(401, {error: "missing validator"})
+		return
+    )
+	if allowedUsersAll (
+		c.Next()
+		return
+    )
+	for i allowedUsers.len (
+		if allowedUsers[i] == username (
+			c.Next()
+			return
+        )
+    )
+	c.AbortWithStatusJSON(403, {error: "user not allowed"})
+)
+
+def validatedUser(*gin.Context c) string (
+	string v = c.GetString("username")
+	return v
+)
