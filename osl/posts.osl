@@ -29,7 +29,7 @@ def createPost(*gin.Context c) (
         posts = posts.append({})
     )
 	posts[id] = p
-	if !writeContentLocked(id, input.content) (
+	if !writeContentLocked(id, input.content.toStr()) (
 		delete(posts, id)
 		nextID = id - 1
 		postsMu.Unlock()
